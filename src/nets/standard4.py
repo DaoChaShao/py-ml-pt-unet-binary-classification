@@ -3,12 +3,14 @@
 # @Time     :   2025/11/15 02:58
 # @Author   :   Shawn
 # @Version  :   Version 0.1.0
-# @File     :   standard.py
+# @File     :   standard4.py
 # @Desc     :   
 
 
-from torch import nn, cat
+from torch import nn, cat, randn
 from torchsummary import summary
+
+from src.utils.config import CONFIG
 
 WIDTH: int = 64
 
@@ -26,13 +28,14 @@ class DoubleConv(nn.Module):
 
         # Setup input layers using nn.Sequential
         self._layers = nn.Sequential(
-            nn.Conv2d(self._C, mid_channels, kernel_size=3, padding=1, bias=True),  # Keep original size
+            # The 1st conv layer: keep original size
+            nn.Conv2d(self._C, mid_channels, kernel_size=3, padding=1, stride=1, bias=True),
             nn.BatchNorm2d(mid_channels),
-            nn.ReLU(inplace=True),
-
-            nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1, bias=True),  # Keep original size
+            nn.ReLU(inplace=False),
+            # The 2nd conv layer: keep original size
+            nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1, stride=1, bias=True),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=False),
         )
 
         # Initialise parameters
@@ -70,8 +73,15 @@ class DownSampler(nn.Module):
     def __init__(self, in_channels: int, out_channels: int):
         super().__init__()
         self._pool = nn.Sequential(
+            # Down-sample by 2 using MaxPool
             nn.MaxPool2d(kernel_size=2, stride=2, padding=0),
-            DoubleConv(in_channels, out_channels)
+            DoubleConv(in_channels, out_channels),
+
+            # Alternative: Down-sample by 2 strides convolution
+            # nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=2, padding=1, bias=True),
+            # nn.Dropout(0.3),
+            # nn.BatchNorm2d(out_channels),
+            # nn.LeakyReLU(),
         )
 
     def forward(self, x):
@@ -87,22 +97,23 @@ class DownSampler(nn.Module):
 class UpSampler(nn.Module):
     """ Decoding up-sampling block for UNet model """
 
-    def __init__(self, in_channels: int, out_channels: int, mid_channels: int = None, bilinear: bool = True):
+    def __init__(self, decoder_channels: int, encoder_channels: int, bilinear: bool = True):
         super().__init__()
         if bilinear:
+            # Bilinear InterpolationUpsample without changing channel count
             self._up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
-            if mid_channels is None:
-                mid_channels = in_channels // 2
-            self._conv = DoubleConv(in_channels, out_channels, mid_channels)
         else:
-            self._up = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2)
-            self._conv = DoubleConv(in_channels, out_channels)
+            # ConvTranspose2d will reduce decoder channels
+            self._up = nn.ConvTranspose2d(decoder_channels, encoder_channels, kernel_size=2, stride=2)
+        in_channels: int = decoder_channels + encoder_channels
+        out_channels: int = encoder_channels
+        self._conv = DoubleConv(in_channels, out_channels)
 
     def forward(self, decoder_feat, encoder_feat):
-        # Decode the features
+        # Decode the features: upsample/transpose
         decoder_out = self._up(decoder_feat)
 
-        # Find the size difference and pad if necessary, size: (batch, channels, height, width)
+        # Find the size difference and pad if needed to match encoder spatial size (batch, channels, height, width)
         diff_H = encoder_feat.size()[2] - decoder_out.size()[2]
         diff_W = encoder_feat.size()[3] - decoder_out.size()[3]
 
@@ -138,36 +149,37 @@ class OutConv(nn.Module):
         print()
 
 
-class Standard5LayersUNet(nn.Module):
-    def __init__(self, in_channels: int, n_classes: int, height: int, width: int, bilinear: bool = True):
+class Standard4LayersUNet(nn.Module):
+    def __init__(self,
+                 in_channels: int, n_classes: int,
+                 height: int, width: int,
+                 bilinear: bool = True, channels: int = 64):
         super().__init__()
-        self._in = in_channels
-        self._classes = n_classes
+        self._C = in_channels
+        self._amount = n_classes
         self._H = height
         self._W = width
         self._B = bilinear
 
-        _out: int = 128
-        self._inc = InputDoubleConv(self._in, _out, _out, height=self._H, width=self._W)
-        self._down_i = DownSampler(_out, _out * 2)
-        self._down_ii = DownSampler(_out * 2, _out * 4)
-        self._down_iii = DownSampler(_out * 4, _out * 8)
-        self._down_iv = DownSampler(_out * 8, _out * 16)
+        # Encoder Architecture
+        self._inc = DoubleConv(self._C, channels, height=self._H, width=self._W)
+        self._down_i = DownSampler(channels, channels * 2)
+        self._down_ii = DownSampler(channels * 2, channels * 4)
+        self._down_iii = DownSampler(channels * 4, channels * 8)
+        # Bottleneck layer: reduce channels by factor if bilinear
+        self._down_iv = DownSampler(channels * 8, channels * 16)
+        # Decoder Architecture
+        self._up_i = UpSampler(channels * 16, channels * 8, bilinear=self._B)
+        self._up_ii = UpSampler(channels * 8, channels * 4, bilinear=self._B)
+        self._up_iii = UpSampler(channels * 4, channels * 2, bilinear=self._B)
+        self._up_iv = UpSampler(channels * 2, channels, bilinear=self._B)
 
-        factor = 2 if self._B else 1
-        self._down_v = DownSampler(_out * 16, _out * 32 // factor)
-
-        self._up_i = UpSampler(_out * 32, (_out * 16) // factor, bilinear=self._B)
-        self._up_ii = UpSampler(_out * 16, (_out * 8) // factor, bilinear=self._B)
-        self._up_iii = UpSampler(_out * 8, (_out * 4) // factor, bilinear=self._B)
-        self._up_iv = UpSampler(_out * 4, (_out * 2) // factor, bilinear=self._B)
-        self._up_v = UpSampler(_out * 2, _out, bilinear=self._B)
-
-        self._outc = OutputConv(_out, self._classes)
+        self._outc = OutConv(channels, self._amount)
 
         self.apply(self._init_weights)
 
-    def _init_weights(self, layer):
+    @staticmethod
+    def _init_weights(layer):
         if isinstance(layer, nn.Conv2d):
             nn.init.kaiming_normal_(layer.weight, nonlinearity="relu")
             if layer.bias is not None:
@@ -183,28 +195,40 @@ class Standard5LayersUNet(nn.Module):
         down_ii = self._down_ii(down_i)
         down_iii = self._down_iii(down_ii)
         down_iv = self._down_iv(down_iii)
-        down_v = self._down_v(down_iv)
 
-        up_i = self._up_i(down_v, down_iv)
-        up_ii = self._up_ii(up_i, down_iii)
-        up_iii = self._up_iii(up_ii, down_ii)
-        up_iv = self._up_iv(up_iii, down_i)
-        up_v = self._up_v(up_iv, out)
+        up_i = self._up_i(down_iv, down_iii)
+        up_ii = self._up_ii(up_i, down_ii)
+        up_iii = self._up_iii(up_ii, down_i)
+        up_iv = self._up_iv(up_iii, out)
 
         # NOTE: Return raw logits (no softmax); use argmax(dim=1) during validation.
-        logits = self._outc(up_v)
+        logits = self._outc(up_iv)
 
         return logits
 
     def summary(self):
         # input size: (batch, channels, height, width)
-        summary(self, (self._in, self._H, self._W))
+        summary(self, (self._C, self._H, self._W))
         print(f"Model Summary for {self.__class__.__name__}")
-        print("=" * 64)
+        print("=" * WIDTH)
         print(self)
-        print("=" * 64)
+        print("=" * WIDTH)
         print()
 
 
 if __name__ == "__main__":
-    pass
+    for bilinear in [True, False]:
+        print(f"Testing with bilinear={bilinear}")
+
+        model = Standard4LayersUNet(
+            in_channels=3, n_classes=1,
+            height=CONFIG.PREPROCESSOR.IMAGE_HEIGHT,
+            width=CONFIG.PREPROCESSOR.IMAGE_WIDTH,
+            bilinear=bilinear
+        )
+        x = randn(1, 3, 256, 256)
+        output = model(x)
+
+        print(f"Input shape: {x.shape}")
+        print(f"Output shape: {output.shape}")  # out: [1, 10, 256, 256]
+        print(f"Parameters: {sum(p.numel() for p in model.parameters()):,}")
