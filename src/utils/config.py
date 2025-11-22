@@ -4,11 +4,61 @@
 # @Author   :   Shawn
 # @Version  :   Version 0.1.0
 # @File     :   config.py
-# @Desc     :   
+# @Desc     :
 
-def main() -> None:
-    """ Main Function """
-    pass
+from dataclasses import dataclass, field
+from pathlib import Path
+from torch import cuda
 
-if __name__ == "__main__":
-    main()
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+
+@dataclass
+class FilePaths:
+    MODEL: Path = BASE_DIR / "models/unet4.pth"
+    DATASET_TRAIN = BASE_DIR / "data/train/"
+    DATASET_TEST = BASE_DIR / "data/test/"
+
+
+@dataclass
+class DataPreprocessor:
+    PCA_VARIANCE_THRESHOLD: float = 0.95
+    RANDOM_STATE: int = 27
+    VALID_SIZE: float = 0.2
+    SHUFFLE_STATUS: bool = True
+    BATCHES: int = 8
+    IMAGE_HEIGHT: int = 320
+    IMAGE_WIDTH: int = 384
+
+
+@dataclass
+class RNNParams:
+    DROPOUT_RATE: float = 0.5
+    RNN_EMBEDDING_DIM: int = 256
+    RNN_HIDDEN_SIZE: int = 128
+    RNN_LAYERS: int = 2
+    RNN_TEMPERATURE: float = 1.0
+
+
+@dataclass
+class UNetParams:
+    SEG_CLASSES: int = 1  # Binary segmentation
+
+
+@dataclass
+class Hyperparameters:
+    ALPHA: float = 1e-4
+    EPOCHS: int = 200
+    ACCELERATOR: str = "cuda" if cuda.is_available() else "cpu"
+
+
+@dataclass
+class Configuration:
+    FILEPATH: FilePaths = field(default_factory=FilePaths)
+    PREPROCESSOR: DataPreprocessor = field(default_factory=DataPreprocessor)
+    RNN_PARAMS: RNNParams = field(default_factory=RNNParams)
+    UNET_PARAMS: UNetParams = field(default_factory=UNetParams)
+    HYPERPARAMETERS: Hyperparameters = field(default_factory=Hyperparameters)
+
+
+CONFIG = Configuration()
