@@ -92,6 +92,11 @@ file.
     uv add -r requirements.txt
     # This reads packages from requirements.txt and adds them to pyproject.toml
     ```
+- Generate a `requirements.txt` file from the current dependencies:
+    ```bash
+    # This exports all dependencies, including optional ones, to requirements-all.txt
+    uv pip compile pyproject.toml --all-extras -o requirements.txt
+    ```
 
 3. Removing Dependencies
 
