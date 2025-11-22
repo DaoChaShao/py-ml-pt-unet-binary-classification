@@ -162,26 +162,26 @@ def prepare_dataset():
     # ])
     train_transformer = Compose([
         Resize(height=CONFIG.PREPROCESSOR.IMAGE_HEIGHT, width=CONFIG.PREPROCESSOR.IMAGE_WIDTH),
-        HorizontalFlip(p=0.5),
-        VerticalFlip(p=0.3),
-        RandomBrightnessContrast(p=0.5),
-        HueSaturationValue(p=0.5),
-        RGBShift(p=0.5),
-        RandomGamma(p=0.5),
-        GaussNoise(p=0.5),
-        Blur(blur_limit=3, p=0.3),
-        MotionBlur(blur_limit=3, p=0.3),
-        MedianBlur(blur_limit=3, p=0.3),
-        Affine(translate_percent=0.1, scale=(0.8, 1.2), rotate=(-15, 15), p=0.5),
-        OpticalDistortion(p=0.3),
-        GridDistortion(p=0.3),
-        ElasticTransform(p=0.3),
+        # HorizontalFlip(p=0.5),
+        # VerticalFlip(p=0.3),
+        # RandomBrightnessContrast(p=0.5),
+        # HueSaturationValue(p=0.5),
+        # RGBShift(p=0.5),
+        # RandomGamma(p=0.5),
+        # GaussNoise(p=0.5),
+        # Blur(blur_limit=3, p=0.3),
+        # MotionBlur(blur_limit=3, p=0.3),
+        # MedianBlur(blur_limit=3, p=0.3),
+        # Affine(translate_percent=0.1, scale=(0.8, 1.2), rotate=(-15, 15), p=0.5),
+        # OpticalDistortion(p=0.3),
+        # GridDistortion(p=0.3),
+        # ElasticTransform(p=0.3),
         Normalize(
             mean=(0.485, 0.456, 0.406),
             std=(0.229, 0.224, 0.225)
         ),
         ToTensorV2()
-    ])
+    ], is_check_shapes=True)
     valid_transformer = Compose([
         Resize(height=CONFIG.PREPROCESSOR.IMAGE_HEIGHT, width=CONFIG.PREPROCESSOR.IMAGE_WIDTH),
         Normalize(
@@ -189,7 +189,7 @@ def prepare_dataset():
             std=(0.229, 0.224, 0.225)
         ),
         ToTensorV2()
-    ])
+    ], is_check_shapes=True)
 
     # Setup datasets
     # dataset_train = PTVDataset(
