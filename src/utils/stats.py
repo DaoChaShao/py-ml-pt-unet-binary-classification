@@ -113,16 +113,16 @@ def summary_dataframe(data: DataFrame) -> None:
 
 
 @timer
-def load_paths(dir_path: Path) -> tuple[list[str], list[str]]:
+def load_paths(base_directory: Path) -> tuple[list[str], list[str]]:
     """ Load all file paths from a directory
-    :param dir_path: path to the directory
+    :param base_directory: path to the directory
     :return: list of file paths in the directory
     """
     images: list = []
     labels: list = []
 
-    if dir_path.exists() and dir_path.is_dir():
-        for subdir in dir_path.iterdir():
+    if base_directory.exists() and base_directory.is_dir():
+        for subdir in base_directory.iterdir():
             match subdir.name:
                 case "images":
                     for file in subdir.iterdir():
@@ -136,9 +136,9 @@ def load_paths(dir_path: Path) -> tuple[list[str], list[str]]:
         images.sort(key=lambda f: f.name)
         labels.sort(key=lambda f: f.name)
 
-        print(f"Loaded {len(images)} files from each directory: {dir_path.name}")
+        print(f"Loaded {len(images)} files from each directory: {base_directory.name}")
     else:
-        print(f"The directory {dir_path} does not exist or is not a directory.")
+        print(f"The directory {base_directory} does not exist or is not a directory.")
 
     return images, labels
 
