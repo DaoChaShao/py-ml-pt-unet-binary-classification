@@ -6,9 +6,56 @@
 # @File     :   decorator.py
 # @Desc     :   
 
-def main() -> None:
-    """ Main Function """
-    pass
+from time import perf_counter
+from functools import wraps
+
+WIDTH: int = 64
+
+
+def timer(func):
+    """ The decorator for timing functions
+    :param func: The function to be decorated
+    :return: The decorated function
+    """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        print("*" * WIDTH)
+        print(f"The function named {func.__name__!r} is starting:")
+        print("-" * WIDTH)
+        time_start = perf_counter()
+        result = func(*args, **kwargs)
+        time_end = perf_counter()
+        time_elapsed = time_end - time_start
+        print("-" * WIDTH)
+        print(f"The function named {func.__name__!r} took {time_elapsed:.4f} seconds to complete.")
+        print("*" * WIDTH)
+        print()
+        return result
+
+    return wrapper
+
+
+def beautifier(func):
+    """ The decorator for beautifying function output
+    :param func: The function to be decorated
+    :return: The decorated function
+    """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        print("*" * WIDTH)
+        print(f"The function named {func.__name__!r} is starting:")
+        print("-" * WIDTH)
+        result = func(*args, **kwargs)
+        print("-" * WIDTH)
+        print(f"The function named {func.__name__!r} has completed.")
+        print("*" * WIDTH)
+        print()
+        return result
+
+    return wrapper
+
 
 if __name__ == "__main__":
-    main()
+    pass
