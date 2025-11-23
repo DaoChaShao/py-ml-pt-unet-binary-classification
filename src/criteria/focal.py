@@ -9,7 +9,7 @@
 from torch import nn, exp
 
 
-class ForegroundFocalLoss(nn.Module):
+class FocalLoss(nn.Module):
     """ Focal Loss with emphasis on foreground pixels for binary segmentation tasks. """
 
     def __init__(self, alpha=0.8, gamma=2.0):
