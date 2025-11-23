@@ -50,6 +50,31 @@ def main() -> None:
     with Timer("UNet Predicting"):
         # prepare_data()
         params: Path = Path(CONFIG.FILEPATH.MODEL)
+        """
+        ****************************************************************
+        Segmentation Evaluation Metrics
+        ----------------------------------------------------------------
+        TP: 6829070, FP:  268228
+        FN: 382294, TN: 35774168
+        
+        Precision: 0.9622
+        Recall:    0.9470
+        F1-Score:  0.9545
+        ****************************************************************
+        
+        ****************************************************************
+        Binary Segmentation Metrics
+        ----------------------------------------------------------------
+        - Background IoU:               98.2141%
+        - Foreground IoU:               91.3027%
+        - mean Intersection over Union: 94.7584%
+        ****************************************************************
+        
+        Epoch [33/200]:
+        - Train Loss:                    0.0204
+        - Valid Loss:                    0.1939
+        - Pixel Accuracy:                98.4960%
+        """
 
         if params.exists():
             print(f"Model {params.name} already EXISTS!")
@@ -71,7 +96,7 @@ def main() -> None:
             # print(type(paths_images[index]), type(paths_masks[index]))
             img_image: Image.Image = Image.open(paths_images[index]).convert("RGB")
             img_mask: Image.Image = Image.open(paths_masks[index])
-            img_image.show()
+            # img_image.show()
             display_mask(img_mask)
 
             arr_image: ndarray = array(img_image)
