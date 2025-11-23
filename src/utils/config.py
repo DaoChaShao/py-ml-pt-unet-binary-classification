@@ -48,7 +48,7 @@ class UNetParams:
 @dataclass
 class Hyperparameters:
     ALPHA: float = 1e-4
-    EPOCHS: int = 200
+    EPOCHS: int = 100
     ACCELERATOR: str = "cuda" if cuda.is_available() else "cpu"
 
 
