@@ -225,8 +225,7 @@ def split_paths(image_paths: list, mask_paths: list, test_size: float = 0.2, shu
     :param shuffle_status: whether to shuffle the data before splitting
     :return: the training and validation sets for image and mask paths
     """
-    if len(image_paths) != len(mask_paths):
-        raise ValueError("The number of image paths must be equal to the number of mask paths.")
+    assert len(image_paths) == len(mask_paths), "The number of image paths must be equal to the number of mask paths."
 
     paired = list(zip(image_paths, mask_paths))
     if shuffle_status:
