@@ -25,27 +25,27 @@ from src.utils.stats import load_paths
 def augment_data(base_directory: Path, augmented_ratio: int):
     """ Generate Augmented Data Function
     - Delete the new files
-        - rm data/train/images/*_aug*.png
-        - rm data/train/masks/*_aug*.png
+        - rm data/train/images/*_new*.png
+        - rm data/train/masks/*_new*.png
     :param base_directory: Path - Base directory containing images and masks folders
     :param augmented_ratio: int - Number of augmentations to generate per original image
     """
     # Set up augmentation pipeline
     transformer = Compose([
-        HorizontalFlip(p=0.5),
-        VerticalFlip(p=0.3),
-        RandomBrightnessContrast(p=0.5),
-        HueSaturationValue(p=0.5),
-        RGBShift(p=0.5),
-        RandomGamma(p=0.5),
-        GaussNoise(p=0.5),
-        Blur(blur_limit=3, p=0.3),
-        MotionBlur(blur_limit=3, p=0.3),
-        MedianBlur(blur_limit=3, p=0.3),
-        Affine(translate_percent=0.1, scale=(0.8, 1.2), rotate=(-15, 15), p=0.5),
-        OpticalDistortion(p=0.3),
-        GridDistortion(p=0.3),
-        ElasticTransform(p=0.3),
+        HorizontalFlip(p=0.1),
+        VerticalFlip(p=0.1),
+        RandomBrightnessContrast(p=0.1, brightness_limit=(-0.05, 0.05), contrast_limit=(-0.05, 0.05)),
+        HueSaturationValue(p=0.1, hue_shift_limit=(-3, 3), sat_shift_limit=(-3, 3), val_shift_limit=(-3, 3)),
+        RGBShift(p=0.1, r_shift_limit=(-3, 3), g_shift_limit=(-3, 3), b_shift_limit=(-3, 3)),
+        RandomGamma(p=0.1, gamma_limit=(8, 12)),
+        GaussNoise(p=0.1, noise_scale_factor=0.1),
+        Blur(p=0.1, blur_limit=(1, 3)),
+        MotionBlur(p=0.1, blur_limit=(1, 3)),
+        MedianBlur(p=0.1, blur_limit=(1, 3)),
+        Affine(p=0.1, translate_percent=0.05, scale=(0.95, 0.95), rotate=(-1, 1)),
+        OpticalDistortion(p=0.1, distort_limit=(-0.01, 0.01)),
+        GridDistortion(p=0.1, num_steps=1, distort_limit=1),
+        ElasticTransform(p=0.1, alpha=0.1, sigma=1),
     ])
 
     images_dir: Path = base_directory / "images"
@@ -91,8 +91,8 @@ def augment_data(base_directory: Path, augmented_ratio: int):
             aug_mask: ndarray = augmented["mask"]
 
             # Generate new file names
-            new_image_name: str = f"{image_name}_aug{j}.png"
-            new_mask_name: str = f"{mask_name}_aug{j}_mask.png"
+            new_image_name: str = f"{image_name}_new{j}.png"
+            new_mask_name: str = f"{mask_name}_new{j}_mask.png"
             # print(new_image_name)
             # print(new_mask_name)
 
