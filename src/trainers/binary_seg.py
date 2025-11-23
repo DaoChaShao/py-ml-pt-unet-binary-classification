@@ -3,7 +3,7 @@
 # @Time     :   2025/11/17 23:06
 # @Author   :   Shawn
 # @Version  :   Version 0.1.0
-# @File     :   iou.py
+# @File     :   binary_seg.py
 # @Desc     :   
 
 from PySide6.QtCore import QObject, Signal
@@ -21,7 +21,7 @@ class BinaryIoU(nn.Module):
     label: 0/1 mask
     """
 
-    def __init__(self, threshold=0.5, eps=1e-8):
+    def __init__(self, threshold: float = 0.5, eps: float = 1e-8):
         super().__init__()
         self._threshold = threshold
         self._eps = eps
@@ -111,7 +111,6 @@ class Evaluator:
         }
 
     def print_metrics(self):
-        """打印关键指标（与旧接口保持兼容）"""
         metrics = self.compute()
 
         print("*" * WIDTH)
@@ -290,7 +289,7 @@ class UNetSegmentationTrainer(QObject):
         :return: None
         """
         _best_mIoU: float = 0.0
-        _patience: int = 10
+        _patience: int = 5
         _patience_counter: int = 0
 
         for epoch in range(epochs):
