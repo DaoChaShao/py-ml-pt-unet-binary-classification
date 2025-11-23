@@ -167,3 +167,74 @@ changelog based on [Conventional Commits](https://www.conventionalcommits.org/).
 - The changelog is automatically generated from your commit messages following the Conventional Commits specification.
 - Run the generation command whenever you want to update the changelog, typically before a release or after significant
   changes.
+
+**LARGE FILE STORAGE (LFS)**
+---
+This project uses Git Large File Storage (LFS) to manage large files, such as datasets, models, and binary files. The
+instructions as follows are only used to upload the large file to the remote repository.
+
+1. Install Git LFS by running the command:
+    ```bash
+    # For MacOS using Homebrew
+    brew install git-lfs
+    ```
+2. Initialise Git LFS in the repository by running the command **ONCE**:
+    ```bash
+    git lfs install
+    ```
+3. Track the large files by using the command:
+    ```bash
+    git lfs track "*.csv"
+    ```
+   You can replace `*.csv` with the appropriate file extension.
+4. Add the `.gitattributes` file to version control using the UI interface or running the command:
+    ```bash
+    git add .gitattributes
+    ```
+5. Add the `fashion-mnist_train.csv` and `fashion-mnist_test.csv` file to version control using the UI interface or
+   running the command:
+    ```bash
+    git add data/fashion-mnist_train.csv
+    git add data/fashion-mnist_test.csv
+    ```
+6. Commit the changes using the UI interface or running the command:
+    ```bash
+    git commit -m "Track large files with Git LFS"
+    ```
+7. List all files being tracked by the Git LFSUse command:
+    ```bash
+    git lfs ls-files
+    ```
+8. Push the changes to the remote repository using the UI interface or running the command:
+    ```bash
+    git push origin main
+    ```
+9. If you change the name of remote while initialising the repository, you need to change the `origin` to your remote
+   name, such as `GitHub` or `xxx`, in the command `git push -u GitHub main` or `git push -u GitHub main`. Besides, if
+   you change the branch name, you also need to change the `main` to your branch name, such as `master` or `xxx`, in the
+   command `git push -u GitHub master` or `git push -u xxx master`. Therefore, it is better to keep the default names of
+   remote and branch.
+10. If you fail to push the large files, you might have used 2FA authentication. The normal push of the button of the
+    UI interface is invalid. You can try to use a **personal access token (PAT)** instead of accessing the GitHub
+    repository. If you have had the token, run the command `git push origin main` first. Then, enter the `username` and
+    the `token` as the password.
+11. When you push with `username` and `token` successfully first, you can continue to use the button of the UI interface
+    to push the changes.
+12. If you use `username` and `password` to initialise the repository, and you use the `personal access token (PTA)` to
+    push the large files, you might fail to push the future changes with the `push` button of the UI. In this case, you
+    can close the LFS push function by running the following command:
+    ```bash
+    git config lfs.<remote-url>/info/lfs.locksverify
+    ```
+    Then, you can use the `push` button of the UI to push the changes.
+13. You must **install Git LFS locally** before you clone the repository if you plan to get the
+    **full size of the data**. Otherwise, you will only get the pointer files. you can run the following command to
+    install Git LFS:
+    ```bash
+    git lfs uninstall
+    ```
+14. (Optional) If you have already cloned the repository without Git LFS installed, you can run the following command to
+    fetch the actual large files:
+    ```bash
+    git lfs pull
+    ```
