@@ -184,18 +184,17 @@ instructions as follows are only used to upload the large file to the remote rep
     ```
 3. Track the large files by using the command:
     ```bash
-    git lfs track "*.csv"
+    git lfs track "*.pth"
     ```
-   You can replace `*.csv` with the appropriate file extension.
+   You can replace `*.pth` with the appropriate file extension.
 4. Add the `.gitattributes` file to version control using the UI interface or running the command:
     ```bash
     git add .gitattributes
     ```
-5. Add the `fashion-mnist_train.csv` and `fashion-mnist_test.csv` file to version control using the UI interface or
+5. Add the `unet4.pth` file to version control using the UI interface or
    running the command:
     ```bash
-    git add data/fashion-mnist_train.csv
-    git add data/fashion-mnist_test.csv
+    git add models/unet4.pth
     ```
 6. Commit the changes using the UI interface or running the command:
     ```bash
