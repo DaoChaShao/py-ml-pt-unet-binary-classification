@@ -144,6 +144,37 @@ def load_paths(base_directory: Path) -> tuple[list[str], list[str]]:
 
 
 @timer
+def split_paths(image_paths: list, mask_paths: list, test_size: float = 0.2, shuffle_status: bool = True) -> tuple:
+    """ Split the image and mask paths into training and validation sets
+    :param image_paths: list of image file paths
+    :param mask_paths: list of mask file paths
+    :param test_size: the proportion of the dataset to include in the test split
+    :param shuffle_status: whether to shuffle the data before splitting
+    :return: the training and validation sets for image and mask paths
+    """
+    assert len(image_paths) == len(mask_paths), "The number of image paths must be equal to the number of mask paths."
+
+    paired = list(zip(image_paths, mask_paths))
+    if shuffle_status:
+        shuffle(paired)
+        # print(paired)
+
+    split_index: int = int(len(image_paths) * (1 - test_size))
+    paired_train_paths: list[tuple[Path, Path]] = paired[:split_index]
+    paired_valid_paths: list[tuple[Path, Path]] = paired[split_index:]
+
+    train_image_paths: list[Path] = [image for image, _ in paired_train_paths]
+    train_mask_paths: list[Path] = [mask for _, mask in paired_train_paths]
+    valid_image_paths: list[Path] = [image for image, _ in paired_valid_paths]
+    valid_mask_paths: list[Path] = [mask for _, mask in paired_valid_paths]
+
+    print(f"Training: {len(train_image_paths)} images, {len(train_mask_paths)} masks")
+    print(f"Validation: {len(valid_image_paths)} images, {len(valid_mask_paths)} masks")
+
+    return train_image_paths, train_mask_paths, valid_image_paths, valid_mask_paths
+
+
+@timer
 def save_json(json_data: dict, json_path: str | Path) -> None:
     with open(str(json_path), "w", encoding="utf-8") as file:
         dump(json_data, file, indent=2)
@@ -214,37 +245,6 @@ def standardise_data(data: DataFrame, is_tensor: bool = False) -> tuple[DataFram
     print(f"Preprocessed data type is {type(output)}, and its shape: {output.shape}")
 
     return output, preprocessor
-
-
-@timer
-def split_paths(image_paths: list, mask_paths: list, test_size: float = 0.2, shuffle_status: bool = True) -> tuple:
-    """ Split the image and mask paths into training and validation sets
-    :param image_paths: list of image file paths
-    :param mask_paths: list of mask file paths
-    :param test_size: the proportion of the dataset to include in the test split
-    :param shuffle_status: whether to shuffle the data before splitting
-    :return: the training and validation sets for image and mask paths
-    """
-    assert len(image_paths) == len(mask_paths), "The number of image paths must be equal to the number of mask paths."
-
-    paired = list(zip(image_paths, mask_paths))
-    if shuffle_status:
-        shuffle(paired)
-        # print(paired)
-
-    split_index: int = int(len(image_paths) * (1 - test_size))
-    paired_train_paths: list[tuple[Path, Path]] = paired[:split_index]
-    paired_valid_paths: list[tuple[Path, Path]] = paired[split_index:]
-
-    train_image_paths: list[Path] = [image for image, _ in paired_train_paths]
-    train_mask_paths: list[Path] = [mask for _, mask in paired_train_paths]
-    valid_image_paths: list[Path] = [image for image, _ in paired_valid_paths]
-    valid_mask_paths: list[Path] = [mask for _, mask in paired_valid_paths]
-
-    print(f"Training: {len(train_image_paths)} images, {len(train_mask_paths)} masks")
-    print(f"Validation: {len(valid_image_paths)} images, {len(valid_mask_paths)} masks")
-
-    return train_image_paths, train_mask_paths, valid_image_paths, valid_mask_paths
 
 
 @timer
