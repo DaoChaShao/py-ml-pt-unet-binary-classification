@@ -156,3 +156,72 @@
 
 - 更新日志是根据您的提交消息遵循 Conventional Commits 规范自动生成的。
 - 每当您想要更新更新日志时（通常在发布之前或进行重大更改之后），运行生成命令。
+
+**大文件存储（LFS）**
+---
+该项目使用Git大文件存储（LFS）来管理大型文件，例如数据集、模型和其他二进制文件。以下说明仅用于将大文件上传到远程仓库。
+
+1. 使用命令
+    ```bash
+    # MacOS上使用 Homebrew
+    brew install git-lfs
+    ```
+   安装Git LFS。
+2. **仅需一次**使用命令
+    ```bash
+    git lfs install
+    ```
+   在仓库中初始化Git LFS。
+3. 使用命令
+    ```bash
+    git lfs track "*.csv"
+    ```
+   跟踪大文件（您可以将`*.csv`替换为适当的文件扩展名）。
+4. 使用命令
+    ```bash
+    git add .gitattributes
+    ```
+   或图形界面将`.gitattributes`文件添加到版本控制中。
+5. 使用命令
+    ```bash
+    git add data/fashion-mnist_train.csv
+    git add data/fashion-mnist_test.csv
+    ```
+   或图形界面将`fashion-mnist_train.csv`和`fashion-mnist_test.csv`文件添加到版本控制中。
+6. 使用命令
+    ```bash
+    git commit -m "Track large files with Git LFS"
+    ```
+   或图形界面提交更改。
+7. 使用命令
+    ```bash
+    git lfs ls-files
+    ```
+   列出所有由Git LFS跟踪的文件。
+8. 使用命令
+    ```bash
+    git push origin main
+    ```
+   或图形界面将更改推送到远程仓库。
+9. 如果您在初始化仓库时更改了远程名称，则需要在命令`git push origin main`中将`origin`更改为您的远程名称，例如`GitHub`或
+   `xxx`，如`git push -u GitHub main`或`git push -u xxx main`。此外，如果您更改了分支名称，也需要将`main`更改为您的分支名称，例如
+   `master`或`xxx`，如`git push -u GitHub master`或`git push -u xxx master`。 因此，最好保持远程和分支的默认名称。
+10. 如果您推送大文件失败，可能是因为您使用了双重身份验证。UI 界面按钮的正常推送无效。您可以尝试使用**个人访问令牌 (PAT)**
+    来代替访问 GitHub 资源库。如果您已经拥有令牌，请先运行命令 `git push origin main`。然后，输入 `username` 和 `token`
+    作为密码。
+11. 当您第一次使用 `username` 和 `token` 成功推送后，您可以继续使用 UI 界面的按钮来推送更改。
+12. 如果您使用 `username` 和 `password` 初始化了仓库，并且使用 `personal access token (PTA)` 推送大文件，
+    则可能无法使用 UI 的 `push` 按钮推送将来的更改。在这种情况下，您可以通过运行以下命令关闭 LFS 推送功能：
+    ```bash
+    git config lfs.<remote-url>/info/lfs.locksverify
+    ```
+    然后，您可以使用 UI 的 `push` 按钮来推送更改。
+13. 在克隆仓库之前，**必须**先在**本地安装 Git LFS**，如果你打算获取**完整的数据文件**。否则，你只能得到指针文件。
+    你可以运行以下命令来安装 Git LFS：
+    ```bash
+    git lfs install
+    ```
+14. （可选）如果您已经在未安装 Git LFS 的情况下克隆了仓库，您可以运行以下命令来获取实际的大文件：
+    ```bash
+    git lfs pull
+    ```
