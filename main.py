@@ -6,29 +6,25 @@
 # @File     :   main.py
 # @Desc     :
 
-from albumentations.core.composition import Compose
-from albumentations import (Resize, HorizontalFlip, VerticalFlip, OneOf,
-                            RandomBrightnessContrast, HueSaturationValue, RGBShift, RandomGamma,
-                            GaussNoise, Blur, MotionBlur, MedianBlur,
-                            Affine, OpticalDistortion, GridDistortion, ElasticTransform,
-                            Normalize, ToTensorV2)
-from numpy import array, ndarray, unique, uint8, set_printoptions
 from PIL import Image
+from albumentations.core.composition import Compose
+from albumentations import Resize, Normalize, ToTensorV2
+from numpy import array, ndarray, unique, uint8, set_printoptions
 from pathlib import Path
+from pprint import pprint
 from random import randint
 from sys import maxsize
 from torch import optim, tensor, nn
-from torchvision import transforms
 
 from src.criteria.dice import DiceBCELoss
-from src.criteria.focal import ForegroundFocalLoss
+from src.criteria.focal import FocalLoss
 from src.criteria.DNF import ComprehensiveSegLoss
 from src.criteria.edge import EdgeAwareLoss
 from src.datasets.seg_PTV import mask_map_class_id, PTVDataset
 from src.datasets.seg_ALB import ALBDataset
 from src.nets.standard4 import Standard4LayersUNet
 from src.nets.standard5 import Standard5LayersUNet
-from src.trainers.iou import UNetSegmentationTrainer
+from src.trainers.binary_seg import UNetSegmentationTrainer
 from src.utils.config import CONFIG
 from src.utils.decorator import timer
 from src.utils.PT import TorchDataLoader, TorchRandomSeed
@@ -60,7 +56,7 @@ def display_mask(mask: Image.Image | ndarray) -> None:
 
 
 @timer
-def check_dataset_status(image_paths) -> tuple[float, float]:
+def check_dataset_status(image_paths) -> None:
     heights: list[int] = []
     widths: list[int] = []
 
@@ -76,8 +72,6 @@ def check_dataset_status(image_paths) -> tuple[float, float]:
     print(f"The average image size: {avg_height:.1f} x {avg_width:.1f}")
     print(f"The range of image: {min(heights)}x{min(widths)} - {max(heights)}x{max(widths)}")
 
-    return avg_height, avg_width
-
 
 @timer
 def check_mask_distribution(mask_paths, sample_size: int = 10):
@@ -91,9 +85,9 @@ def check_mask_distribution(mask_paths, sample_size: int = 10):
         foreground_pixels += (arr > 0).sum()
         total_pixels += arr.size
 
-    foreground_ratio = foreground_pixels / total_pixels
+    foreground_ratio: float = foreground_pixels / total_pixels
 
-    print(f"The foreground pixels occurred {foreground_ratio * 100:.1f} % in the sampled masks.")
+    print(f"The foreground pixels occurred {foreground_ratio * 100:.1f} %({foreground_ratio}) in the sampled masks.")
 
     return foreground_ratio
 
@@ -103,6 +97,8 @@ def preprocess_data():
     # print(f"The path of training dataset: {base}")
 
     paths_images, paths_masks = load_paths(base)
+    # pprint(paths_images[:11])
+    # pprint(paths_masks[:11])
     # index: int = randint(0, len(paths_images) - 1)
     # print(f"Random index selected: {index}")
     # print(f"Randomly selected image path: {paths_images[index]}")
@@ -136,46 +132,14 @@ def prepare_dataset():
     train_image_paths, train_mask_paths, valid_image_paths, valid_mask_paths = preprocess_data()
 
     # Check mask distribution
-    check_mask_distribution(train_mask_paths, sample_size=20)
+    weight: float = check_mask_distribution(train_mask_paths, sample_size=len(train_mask_paths))
 
     # Get the average image size in the dataset
-    avg_height, avg_width = check_dataset_status(train_image_paths)
+    check_dataset_status(train_image_paths)
 
     # Setup image enhancements
-    # img_transformer = transforms.Compose([
-    #     transforms.Resize((CONFIG.PREPROCESSOR.IMAGE_HEIGHT, CONFIG.PREPROCESSOR.IMAGE_WIDTH)),
-    #     transforms.RandomHorizontalFlip(0.5),
-    #     transforms.RandomVerticalFlip(0.3),
-    #     transforms.RandomRotation(15),
-    #     transforms.ColorJitter(0.2, 0.2, 0.2, 0.1),
-    #     transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), scale=(0.8, 1.2)),
-    #     transforms.GaussianBlur(3, sigma=(0.1, 2.0)),
-    #     transforms.ToTensor(),
-    #     transforms.Normalize(
-    #         mean=[0.485, 0.456, 0.406],
-    #         std=[0.229, 0.224, 0.225]
-    #     )
-    # ])
-    # mask_transformer = transforms.Compose([
-    #     transforms.Resize((CONFIG.PREPROCESSOR.IMAGE_HEIGHT, CONFIG.PREPROCESSOR.IMAGE_WIDTH)),
-    #     transforms.ToTensor(),
-    # ])
     train_transformer = Compose([
         Resize(height=CONFIG.PREPROCESSOR.IMAGE_HEIGHT, width=CONFIG.PREPROCESSOR.IMAGE_WIDTH),
-        # HorizontalFlip(p=0.5),
-        # VerticalFlip(p=0.3),
-        # RandomBrightnessContrast(p=0.5),
-        # HueSaturationValue(p=0.5),
-        # RGBShift(p=0.5),
-        # RandomGamma(p=0.5),
-        # GaussNoise(p=0.5),
-        # Blur(blur_limit=3, p=0.3),
-        # MotionBlur(blur_limit=3, p=0.3),
-        # MedianBlur(blur_limit=3, p=0.3),
-        # Affine(translate_percent=0.1, scale=(0.8, 1.2), rotate=(-15, 15), p=0.5),
-        # OpticalDistortion(p=0.3),
-        # GridDistortion(p=0.3),
-        # ElasticTransform(p=0.3),
         Normalize(
             mean=(0.485, 0.456, 0.406),
             std=(0.229, 0.224, 0.225)
@@ -192,18 +156,6 @@ def prepare_dataset():
     ], is_check_shapes=True)
 
     # Setup datasets
-    # dataset_train = PTVDataset(
-    #     image_paths=train_image_paths,
-    #     mask_paths=train_mask_paths,
-    #     img_transformer=img_transformer,
-    #     mask_transformer=mask_transformer
-    # )
-    # dataset_valid = PTVDataset(
-    #     image_paths=valid_image_paths,
-    #     mask_paths=valid_mask_paths,
-    #     img_transformer=img_transformer,
-    #     mask_transformer=mask_transformer
-    # )
     dataset_train = ALBDataset(
         image_paths=train_image_paths,
         mask_paths=train_mask_paths,
@@ -237,7 +189,7 @@ def prepare_dataset():
     # print(f"Number of training batches: {len(dataloader_train)}")
     # print(f"Number of validation batches: {len(dataloader_valid)}")
 
-    return dataloader_train, dataloader_valid
+    return dataloader_train, dataloader_valid, weight
 
 
 def main() -> None:
@@ -245,7 +197,7 @@ def main() -> None:
     with TorchRandomSeed("Training UNet Segmentation Model"):
         # prepare_dataset()
         print("1.Preparing dataset...")
-        train, valid = prepare_dataset()
+        train, valid, weight = prepare_dataset()
 
         # train_index: int = randint(0, len(train) - 1)
         # valid_index: int = randint(0, len(valid) - 1)
@@ -265,27 +217,21 @@ def main() -> None:
         print("5.Setting up optimiser...")
         # Set up an optimiser and loss function
         optimiser = optim.AdamW(model.parameters(), lr=CONFIG.HYPERPARAMETERS.ALPHA, weight_decay=1e-4)
-        # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimiser, T_max=CONFIG.HYPERPARAMETERS.EPOCHS)
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimiser, mode="min", factor=0.5, patience=5)
-        # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimiser, mode="max", factor=0.5, patience=5)
-        # scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimiser, T_0=10, T_mult=2, eta_min=1e-6)
         print("6.Optimiser setup completed.")
 
         print("7.Setting up loss function...")
         # Compute class balance weights
-        # - foreground pixel occupied 18.6%, which is 0.186
-        # - background pixel occupied 81.4%, which is 1 - 0.186
-        # - pos_weight = foreground / background = 81.4% / 18.6% ≈ 4.38
-        pos_weight = tensor([(1 - 0.186) / 0.186]).to(CONFIG.HYPERPARAMETERS.ACCELERATOR)
-        # criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)  # Background IoU: 87.2620% | Foreground IoU: 59.2802%
-        # criterion = DiceBCELoss(pos_weight=pos_weight)  # - Background IoU: 88.4831% | Foreground IoU: 61.2048%
-        # criterion = ForegroundFocalLoss(alpha=0.9, gamma=1.2)  # Background IoU: 89.2834% | Foreground IoU: 60.5484%
-        criterion = ComprehensiveSegLoss(
-            pos_weight=pos_weight,
-            alpha=0.8,
-            gamma=2.0,
-            weights_ratio=[0.4, 0.3, 0.3]
-        )  # - Background IoU: 89.5123% | Foreground IoU: 62.1154%
+        pos_weight = tensor([(1 - weight) / weight]).to(CONFIG.HYPERPARAMETERS.ACCELERATOR)
+        # criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        # criterion = DiceBCELoss(pos_weight=pos_weight)
+        # criterion = FocalLoss(alpha=0.8, gamma=2.0)
+        # criterion = ComprehensiveSegLoss(
+        #     pos_weight=pos_weight,
+        #     alpha=0.8,
+        #     gamma=2.0,
+        #     weights_ratio=[0.4, 0.3, 0.3]
+        # )
         criterion = EdgeAwareLoss(pos_weight=pos_weight, edge_weight=3.0)
         print("8.Loss function setup completed.")
 
