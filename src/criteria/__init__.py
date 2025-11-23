@@ -6,10 +6,29 @@
 # @File     :   __init__.py.py
 # @Desc     :   
 
-def main() -> None:
-    """ Main Function """
-    pass
+"""
+****************************************************************
+Criterion Module
+----------------------------------------------------------------
+Loss functions for neural network training.
+- DiceBCELoss: Combined Dice and Binary Cross-Entropy loss
+- ComprehensiveSegLoss: Comprehensive segmentation loss
+- EdgeAwareLoss: Edge-aware segmentation loss
+- FocalLoss: Focal loss for class imbalance
+****************************************************************
+"""
 
+__author__ = "Shawn Yu"
+__version__ = "0.1.0"
 
-if __name__ == "__main__":
-    main()
+from .dice import DiceBCELoss
+from .DNF import ComprehensiveSegLoss
+from .edge import EdgeAwareLoss
+from .focal import FocalLoss
+
+__all__ = [
+    "DiceBCELoss",
+    "ComprehensiveSegLoss",
+    "EdgeAwareLoss",
+    "FocalLoss",
+]
