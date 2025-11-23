@@ -174,9 +174,9 @@
    在仓库中初始化Git LFS。
 3. 使用命令
     ```bash
-    git lfs track "*.csv"
+    git lfs track "*.pth"
     ```
-   跟踪大文件（您可以将`*.csv`替换为适当的文件扩展名）。
+   跟踪大文件（您可以将`*.pth`替换为适当的文件扩展名）。
 4. 使用命令
     ```bash
     git add .gitattributes
@@ -184,10 +184,9 @@
    或图形界面将`.gitattributes`文件添加到版本控制中。
 5. 使用命令
     ```bash
-    git add data/fashion-mnist_train.csv
-    git add data/fashion-mnist_test.csv
+    git add models/unet4.pth
     ```
-   或图形界面将`fashion-mnist_train.csv`和`fashion-mnist_test.csv`文件添加到版本控制中。
+   或图形界面将`unet4.pth`文件添加到版本控制中。
 6. 使用命令
     ```bash
     git commit -m "Track large files with Git LFS"
